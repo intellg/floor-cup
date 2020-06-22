@@ -201,7 +201,7 @@ floor=12：
 * 每棵镂空树的根节点的数目是1
 * 当cup=1时，每层的节点数为:1,1,1,1,1 ... 1
 
-不要笑，这两句貌似废话的条件缺一不可，他们构成了这样一个矩阵的初始状态：
+不要笑，这两句貌似废话的条件缺一不可，他们构成了这样一个矩阵的初始状态（Table1）：
 
 |     | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
 |-----|---|---|---|---|---|---|---|---|---|
@@ -221,9 +221,11 @@ a的值v(a) = v(1,1) = v(0,1) + v(0,0) = 1 + 1 = 2
 
 b的值v(b) = v(2,1) = v(1,1) + v(1,0) = v(a) + 1 = 2 + 1 = 3
 
-通项公式为：v(x,y) = v(x-1,y) + v(x-1,y-1)
+通项公式（M1）为：
 
-通过计算，我们可以将上表填充完整：
+    v(x,y) = v(x-1,y) + v(x-1,y-1)
+
+通过计算，我们可以将上表填充完整（Table2）：
 
 |     |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -267,13 +269,74 @@ b的值v(b) = v(2,1) = v(1,1) + v(1,0) = v(a) + 1 = 2 + 1 = 3
 * 如果当前结点是其父节点的左孩子的话，则v=pv+cl+1
 
 到这里，问题2也得到了解答。
-而且，有意思的一点是：问题1和问题2可以分别使用独立的方法进行解决，也就是说#3.2和#3.3是分别独立的算法。
+而且，有意思的一点是：问题1和问题2可以分别使用独立地方法进行解决，也就是说#3.2和#3.3是分别独立的算法。
 
 ## 4. Golang算法
 为了验证我们上述算法的正确性，我们使用Go语言进行编程，完成上述#3.2和#3.3中的算法。
 
-## 4.1 解决问题1
-TBD
+### 4.1 计算镂空树的degree
+先放代码：
+```go
+    func InnerCalculateA(floor, cup int) (degree int) {
+    	list := make([]int, cup)
+    	for c := 0; c < cup; c++ {
+    		list[c] = 1
+    	}
+    
+    	sum := 1
+    	for degree = 1; sum < floor; degree++ {
+    		calList := make([]int, cup)
+    		calList[0] = 1
+    		for c := 1; c < cup; c++ {
+    			calList[c] = list[c] + list[c-1]
+    		}
+    		list = calList
+    		sum += calList[cup-1]
+    	}
+    	return
+    }
+```
+参照公式M1我们需要构建两个长度为cup的数组（其实是slice切片，为了描述方便，本文中全部使用数组这个词）
 
-## 4.2 解决问题2
+第一个数组list，其中的元素全为1，代表Table2表中的第一列；
+
+第二个数组calList，它的第0个元素为1，其余各个元素通过公式calList[i]=list[i]+list[i-1]计算得出。
+
+calList中全部元素计算完成后，将其赋给list，并将calList[cup-1]的值进行累加（sum的初始值为1，这个1其实就是初始的list的最后那个元素1），然后继续计算右侧的下一列。
+
+这里需要两个循环，内循环计算calList的各个元素；外循环进行累加和list<=>calList切换，退出的条件是sum>=floor。外循环执行的次数就是我们要计算的degree值。
+
+#### 优化
+细心地读者可能会想到，如果cup>=log2(floor)的话，degree直接返回log2(floor)就可以了，完全不需要循环嵌套的计算。
+
+是的，所以我们要在上述foo外面增加一个预处理：
+```go
+    func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
+    	// 1.0 If eggs are enough then the binary tree is a non-hollow tree
+    	log2Floor := math.Log2(float64(floor))
+    	if float64(cup) >= log2Floor {
+    		degree = int(math.Ceil(log2Floor))
+    		return
+    	}
+    
+    	return innerCalculate(floor, cup)
+    }
+```
+注意，这里的foo函数是作为参数传进来并赋给innerCalculate()的，所以调用时要写成：
+
+    d := bar(n, m, foo) // n为floor的值，m为cup的值，d为计算degree的结果
+
+#### 另一种算法
+上述#4.1的求解过程，使用的是公式M1，这个公式很简单（而且实现起来效率也不错），但是有一点不尽如人意：需要将前面cup数1~n-1的值都计算出来。
+有没有办法，只看cup=n这一行，就可以进行计算呢？
+
+办法倒是有，只不过分析起来很绕。其中涉及到Pascal三角的通项公式，及其每一行的求和。这里只给出公式（M2）不做详细讨论。
+
+    v(x,y) = ∑n=1~y(∑m=0~x(C(n,m)))
+
+这是一个嵌套的求和过程，后面的C(n,m)是组合公式。感兴趣的读者可以参照degree.go文件里的InnerCalculateB()方法。
+
+这个公式不仅复杂，其中还涉及到大量的乘法和除法运算，所以效率反而低。
+
+### 4.2 计算扔杯子的楼层
 TBD

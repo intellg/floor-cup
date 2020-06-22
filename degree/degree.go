@@ -2,7 +2,7 @@ package degree
 
 import "math"
 
-func Calculate(floor, cup int, innerDetect func(int, int) int) (degree int) {
+func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
 	// 1.0 If eggs are enough then the binary tree is a non-hollow tree
 	log2Floor := math.Log2(float64(floor))
 	if float64(cup) >= log2Floor {
@@ -10,7 +10,7 @@ func Calculate(floor, cup int, innerDetect func(int, int) int) (degree int) {
 		return
 	}
 
-	return innerDetect(floor, cup)
+	return innerCalculate(floor, cup)
 }
 
 func InnerCalculateA(floor, cup int) (degree int) {
