@@ -277,24 +277,26 @@ b的值v(b) = v(2,1) = v(1,1) + v(1,0) = v(a) + 1 = 2 + 1 = 3
 ### 4.1 计算镂空树的degree
 先放代码：
 ```go
-    func InnerCalculateA(floor, cup int) (degree int) {
-    	list := make([]int, cup)
-    	for c := 0; c < cup; c++ {
-    		list[c] = 1
-    	}
-    
-    	sum := 1
-    	for degree = 1; sum < floor; degree++ {
-    		calList := make([]int, cup)
-    		calList[0] = 1
-    		for c := 1; c < cup; c++ {
-    			calList[c] = list[c] + list[c-1]
-    		}
-    		list = calList
-    		sum += calList[cup-1]
-    	}
-    	return
+package foo
+
+func InnerCalculateA(floor, cup int) (degree int) {
+    list := make([]int, cup)
+    for c := 0; c < cup; c++ {
+        list[c] = 1
     }
+
+    sum := 1
+    for degree = 1; sum < floor; degree++ {
+        calList := make([]int, cup)
+        calList[0] = 1
+        for c := 1; c < cup; c++ {
+            calList[c] = list[c] + list[c-1]
+        }
+        list = calList
+        sum += calList[cup-1]
+    }
+    return
+}
 ```
 参照公式M1我们需要构建两个长度为cup的数组（其实是slice切片，为了描述方便，本文中全部使用数组这个词）
 
@@ -311,16 +313,19 @@ calList中全部元素计算完成后，将其赋给list，并将calList[cup-1]�
 
 是的，所以我们要在上述foo外面增加一个预处理：
 ```go
-    func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
-    	// 1.0 If eggs are enough then the binary tree is a non-hollow tree
-    	log2Floor := math.Log2(float64(floor))
-    	if float64(cup) >= log2Floor {
-    		degree = int(math.Ceil(log2Floor))
-    		return
-    	}
-    
-    	return innerCalculate(floor, cup)
+package foo
+import "math"
+
+func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
+    // 1.0 If eggs are enough then the binary tree is a non-hollow tree
+    log2Floor := math.Log2(float64(floor))
+    if float64(cup) >= log2Floor {
+        degree = int(math.Ceil(log2Floor))
+        return
     }
+
+    return innerCalculate(floor, cup)
+}
 ```
 注意，这里的foo函数是作为参数传进来并赋给innerCalculate()的，所以调用时要写成：
 
@@ -339,4 +344,18 @@ calList中全部元素计算完成后，将其赋给list，并将calList[cup-1]�
 这个公式不仅复杂，其中还涉及到大量的乘法和除法运算，所以效率反而低。
 
 ### 4.2 计算扔杯子的楼层
-TBD
+为了计算扔杯子的楼层，我们需要先构建如下的struct：
+```go
+package foo
+
+type node struct {
+	Value      int   `json:"V"`
+	Left       *node `json:"L"`
+	Right      *node `json:"R"`
+	Parent     *node `json:"-"`
+	LeftCount  int   `json:"-"`
+	RightCount int   `json:"-"`
+	Remain     int   `json:"-"`
+	IsLeft     bool  `json:"-"`
+}
+```
