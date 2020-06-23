@@ -255,14 +255,14 @@ b的值v(b) = v(3,2) = v(2,2) + v(2,1) = v(a) + 1 = 2 + 1 = 3
 |cup=8|  1  |  2  |  4  |  8  | 16  | 32  | 64  | 128 | 256 |
 
 让我们再回顾一下这个矩阵的含义：对于指定的cup数（比如说5），如果想检测floor层楼（比如说100），需要查看表中cup（=5）这行，看看floor（<=100）落在哪个区间（163）。
-这个区间对应的阶数，就是最差情况下，需要扔杯子的次数。到目前为止，我们已经解决了问题1。
+这个区间对应的阶数，就是最差情况下，需要扔杯子的次数。
+
+到目前为止，我们已经解决了问题1。
 
 ## 4. 构成和填充镂空树
-这一小节，我们来决绝问题2。
+解决了问题1，问题2就容易了。我们只需要将这个m阶的镂空树构成出来并将数字填充进去就好了。
 
 ### 4.1 构成镂空树
-回答了问题1，问题2就容易了。我们只需要将这个m阶的镂空树构成出来并将数字填充进去就好了
-
 构成cup=c且包含floor=f个节点的镂空树：
 * 从根节点出发，以广度优先的方式创建子节点
 * 设定当前破碎杯子数b=0
@@ -290,13 +290,16 @@ b的值v(b) = v(3,2) = v(2,2) + v(2,1) = v(a) + 1 = 2 + 1 = 3
 * 如果当前结点是其父节点的右节点的话，则v=pv+cl+1
 
 到这里，问题2也得到了解答。
-而且，有意思的一点是：问题1和问题2可以分别使用独立地方法进行解决，也就是说#3.2和#4是分别独立的算法。
+
+注意一点：问题1和问题2可以分别使用独立地方法进行解决，也就是说#3.2和#4是分别独立的算法。
+但是接下来的编程求解过程中，我们会在完成问题1的求解之后将镂空树的度（degree）记录下来，作为接下来计算的参数。
+这样做的目的是为了避免在问题2的求解过程中，浪费代码在退出条件的判断部分，而且也浪费runtime时的内存空间。
 
 ## 5. Golang算法
 为了验证我们上述算法的正确性，我们使用Go语言进行编程，完成上述算法。
 
 ### 5.1 计算镂空树的degree
-先放代码：
+先放代码——这就是求解问题1的核心代码：
 ```go
 func InnerCalculateA(floor, cup int) (degree int) {
     list := make([]int, cup)
@@ -317,20 +320,21 @@ func InnerCalculateA(floor, cup int) (degree int) {
     return
 }
 ```
-参照公式M1我们需要构建两个长度为cup的数组（其实是slice切片，为了描述方便，本文中全部使用数组这个词）
+参照公式M1我们需要构建两个长度为cup的数组。
+> 其实是Go语言的slice切片，为了便于理解，本文中全部使用数组这个词
 
 第一个数组list，其中的元素全为1，代表Table2表中的第一列；
 
-第二个数组calList，它的第0个元素为1，其余各个元素通过公式calList[i]=list[i]+list[i-1]计算得出。
+第二个数组calList，它的第0个元素初始值为1，代表第1阶只有1个root节点，其余各个元素通过公式calList[i]=list[i]+list[i-1]计算得出。
 
-calList中全部元素计算完成后，将其赋给list，并将calList[cup-1]的值进行累加（sum的初始值为1，这个1其实就是初始的list的最后那个元素1），然后继续计算右侧的下一列。
+calList中全部元素计算完成后，将其赋给list，并将calList[cup-1]的值进行累加（sum的初始值为1，这个1其实就是那个root节点），然后继续计算右侧的下一列。
 
-这里需要两个循环，内循环计算calList的各个元素；外循环进行累加和list<=>calList切换，退出的条件是sum>=floor。外循环执行的次数就是我们要计算的degree值。
+这里需要两个循环，内循环计算calList的各个元素；外循环进行累加以及list=calList切换，退出的条件是sum>=floor。外循环执行的次数就是我们要计算的degree值。
 
 #### 优化
 细心地读者可能会想到，如果cup>=log2(floor)的话，degree直接返回log2(floor)就可以了，完全不需要循环嵌套的计算。
 
-是的，所以我们要在上述foo外面增加一个预处理：
+是的，所以我们要在上述函数外面增加一个预处理：
 ```go
 func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
     // 1.0 If eggs are enough then the binary tree is a non-hollow tree
@@ -343,21 +347,21 @@ func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
     return innerCalculate(floor, cup)
 }
 ```
-注意，这里的foo函数是作为参数传进来并赋给innerCalculate()的，所以调用时要写成：
+注意，这里的InnerCalculateA函数是作为参数传进来并赋给innerCalculate的，所以调用时要写成：
 
-    d := bar(n, m, foo) // n为floor的值，m为cup的值，d为计算degree的结果
+    d := Calculate(n, m, InnerCalculateA) // n为floor的值，m为cup的值，d为计算degree的结果
 
 #### 另一种算法
-上述#4.1的求解过程，使用的是公式M1，这个公式很简单（而且实现起来效率也不错），但是有一点不尽如人意：需要将前面cup数1~n-1的值都计算出来。
+上述#5.1的求解过程，使用的是公式M1。这个公式很简单（而且实现起来效率也不错），但是有一点不尽如人意：需要将前面cup数1~n-1的值都计算出来。
 有没有办法，只看cup=n这一行，就可以进行计算呢？
 
 办法倒是有，只不过分析起来很绕。其中涉及到Pascal三角的通项公式，及其每一行的求和。这里只给出公式（M2）不做详细讨论。
 
     v(x,y) = ∑n=1~y(∑m=0~x(C(n,m)))
 
-这是一个嵌套的求和过程，后面的C(n,m)是组合公式。感兴趣的读者可以参照degree.go文件里的InnerCalculateB()方法。
+这是一个嵌套的求和过程，后面的C(n,m)是组合公式。感兴趣的读者可以参照solution_b.go文件里的算法。
 
-这个公式不仅复杂，其中还涉及到大量的乘法和除法运算，所以效率反而低。degree_test.go中有对比这两种方法的benchmark，下面是benchmark结果比较：
+这个公式不仅复杂，而且执行效率还低。degree_test.go中有对比这两种方法的benchmark，下面是benchmark结果比较：
 
     goos: windows
     goarch: amd64
@@ -368,29 +372,22 @@ func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
     ok      int-floor-cup/degree    2.902s
 
 差的还不是一星半点呢，可惜作者挖空心思的想到这么漂亮的公式，居然这么中看不中用！
+其实通过counter打点的分析，InnerCalculateB的循环次数要少于InnerCalculateA，之所以效率低，就是被大量的乘除运算拖累了。
 
 ### 5.2 计算扔杯子的楼层
 为了计算扔杯子的楼层，我们需要先构建如下的struct：
 ```go
 type node struct {
-	Value      int   `json:"V"`
-	Left       *node `json:"L"`
-	Right      *node `json:"R"`
-	Parent     *node `json:"-"`
-	LeftCount  int   `json:"-"`
-	RightCount int   `json:"-"`
-	Remain     int   `json:"-"`
-	IsLeft     bool  `json:"-"`
+	Value      int   `json:"V"` // 当前节点的值
+	Left       *node `json:"L"` // 指向左节点的指针
+	Right      *node `json:"R"` // 指向右节点的指针
+	Parent     *node `json:"-"` // 指向父节点的指针
+	LeftCount  int   `json:"-"` // 左子树的全部节点个数
+	RightCount int   `json:"-"` // 右子树的全部节点个数
+	Remain     int   `json:"-"` // 在镂空树生长过程中记录杯子破碎的次数
+	IsLeft     bool  `json:"-"` // 标记当前节点是其父节点的左/右子树
 }
 ```
-* Value 表示当前节点的数值
-* Left  是指向左节点的指针
-* Right  是指向右节点的指针
-* Parent 是指向父节点的指针
-* LeftCount  表示左子树的全部节点个数
-* RightCount 表示右子树的全部节点个数
-* Remain 用来在镂空树生长过程中记录杯子破碎的次数
-* IsLeft 标记当前节点是其父节点的左/右子树
 
 #### 构建镂空树
 数据结构定义好之后，我们来看看addNode()方法
@@ -421,10 +418,10 @@ func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
 	return
 }
 ```
-逻辑很简单：
+逻辑比较简单：
 * 如果还有未破随的杯子（Remain>0)，就创建左节点，并且在创建之后将子节点的Remain值减1。
-* 不论Remain为何值，都可以添加右节点。
-* 此处还有一个额外的逻辑是：加节点到最后一刻，如果只剩1个节点，那只能指定single=true之后再调用addNode()，这时就不能添加右节点了。
+* 不论Remain为何值，都可以添加右节点，但需要满足下述逻辑
+* 填加节点到最后一刻，如果只剩1个节点（也就是通过指定single=true再调用addNode()），这时就不能添加右节点了。
 * 节点添加完成之后，返回添加节点的个数。
 
 注意，addNode()方法并不是直接被调用的，真正被调用的是addBothNode()和addSingleNode()。
@@ -453,7 +450,7 @@ func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
 
 #### 计算左右子孙数——逆向广度优先遍历
 从镂空树的倒数第二阶（n-1）向root遍历，对每个节点计算其左右子孙数。
-具体算法参照#3.3
+具体算法参照#4.2
 ```go
 func adjustCount(nodeList *[]*node) {
 	for _, eachNode := range *nodeList {
@@ -469,7 +466,7 @@ func adjustCount(nodeList *[]*node) {
 
 #### 计算节点值——正向广度优先遍历
 从镂空树的root节点向下遍历，计算每个节点的值。
-具体算法参照#3.3
+具体算法参照#4.2
 ```go
 func fillValue(nodeList *[]*node) {
 	for _, eachNode := range *nodeList {
