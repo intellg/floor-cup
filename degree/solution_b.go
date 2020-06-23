@@ -59,5 +59,7 @@ func compose(n, m int) int {
 	for i := m; i > 1; i-- {
 		result /= i
 	}
+
+	counter++
 	return result
 }

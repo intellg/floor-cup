@@ -258,7 +258,7 @@ b的值v(b) = v(2,1) = v(1,1) + v(1,0) = v(a) + 1 = 2 + 1 = 3
 * pcl - 父节点的左子孙数
 * pcr - 父节点的右子孙数
 
-为了填充cup=c且深度为n阶的镂空树，我们需要遍历两次镂空树，第一次是从第n阶向root节点进行反向的广度优先遍历
+为了填充cup=c且深度为n阶的镂空树，我们需要遍历两次镂空树，第一次是从第n-1阶向root节点进行反向的广度优先遍历
 * 如果当前节点是其父节点的左子节点，则将此节点的左子孙数pcl=cl+cr+1
 * 如果当前节点是其父节点的右子节点，则其父节点的右子孙数pcr=cl+cr+1
 * 如果当前节点没有父节点，则结束遍历
@@ -371,6 +371,7 @@ type node struct {
 * Remain 用来在镂空树生长过程中记录杯子破碎的次数
 * IsLeft 标记当前节点是其父节点的左/右子树
 
+#### 构建镂空树
 数据结构定义好之后，我们来看看addNode()方法
 ```go
 func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
@@ -399,4 +400,81 @@ func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
 	return
 }
 ```
-逻辑很简单，如果还有未破随的杯子，就创建左节点
+逻辑很简单：
+* 如果还有未破随的杯子（Remain>0)，就创建左节点，并且在创建之后将子节点的Remain值减1。
+* 不论Remain为何值，都可以添加右节点。
+* 此处还有一个额外的逻辑是：加节点到最后一刻，如果只剩1个节点，那只能指定single=true之后再调用addNode()，这时就不能添加右节点了。
+* 节点添加完成之后，返回添加节点的个数。
+
+注意，addNode()方法并不是直接被调用的，真正被调用的是addBothNode()和addSingleNode()。
+```go
+	sum := 1
+	for i := 1; i < degree-1; i++ {
+		nodeList[i] = make([]*node, 0, int(math.Pow(2, float64(i))))
+		for _, eachNode := range nodeList[i-1] {
+			sum += addBothNode(eachNode, &nodeList[i])
+		}
+	}
+	restNodeNumber := floor - sum
+	for _, eachNode := range nodeList[degree-2] {
+		if restNodeNumber == 0 {
+			break
+		}
+		if restNodeNumber == 1 {
+			addSingleNode(eachNode, &nodeList[degree-1])
+			break
+		}
+		restNodeNumber -= addBothNode(eachNode, &nodeList[degree-1])
+	}
+```
+上述第一个循环体内是对镂空树内除了bottom阶的各个节点的添加，nodeList是广度优先遍历需要用到的额外存储空间，其中按顺序存储每一阶的各个节点。
+上述第二个循环体内是对镂空树的bottom阶节点的添加。restNodeNumber为1则调用addSingleNode()否则调用addBothNode()。循环的退出条件是restNodeNumber为0。
+
+#### 计算左右子孙数——逆向广度优先遍历
+从镂空树的倒数第二阶（n-1）向root遍历，对每个节点计算其左右子孙数。
+具体算法参照#3.3
+```go
+func adjustCount(nodeList *[]*node) {
+	for _, eachNode := range *nodeList {
+		if eachNode.Left != nil {
+			eachNode.LeftCount = eachNode.Left.LeftCount + eachNode.Left.RightCount + 1
+		}
+		if eachNode.Right != nil {
+			eachNode.RightCount = eachNode.Right.LeftCount + eachNode.Right.RightCount + 1
+		}
+	}
+}
+```
+
+#### 计算节点值——正向广度优先遍历
+从镂空树的root节点向下遍历，计算每个节点的值。
+具体算法参照#3.3
+```go
+func fillValue(nodeList *[]*node) {
+	for _, eachNode := range *nodeList {
+		if eachNode.Parent == nil { // root
+			eachNode.Value = eachNode.LeftCount + 1
+		} else {
+			if eachNode.IsLeft { // Left node
+				eachNode.Value = eachNode.Parent.Value - eachNode.RightCount - 1
+			} else { // Right node
+				eachNode.Value = eachNode.Parent.Value + eachNode.LeftCount + 1
+			}
+		}
+	}
+}
+```
+
+#### 输出
+到此为止，整个扔杯子问题解决完毕。为了把结构直观地呈现出来，我们使用OutputJson()方法将镂空树输出为JSON文件。
+
+## 5. 后记
+作者是在几周前，跟从朋友的闲聊过程中，听说这个问题的。当时朋友建议使用动态规划来解决此问题，但是作者连动态规划的基本原理都不了解，所以只能从自己的理解出发，尝试解决问题。
+
+理论上说，这种复杂的问题会有很多种解法，solution_c.go文件中就是作者的一位好朋友提供的方法。
+
+这些方法从思路上来说都是条条大路通罗马，完全没有优劣之分。只不过有的方法赶巧效率高，有的方法效率低些，有的方法会更早地遇到整数越界而导致结果错误而已。
+
+希望能有更多的朋友对这个问题提供解法，也希望能够得到大家对上述解题过程中的不充分或者不完整之处进行指点。
+
+最后，送上四个字<font color="blue">进无止境</font>与各位共勉之。

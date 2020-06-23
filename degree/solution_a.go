@@ -14,6 +14,7 @@ func InnerCalculateA(floor, cup int) (degree int) {
 		calList[0] = 1
 		for c := 1; c < cup; c++ {
 			calList[c] = list[c] + list[c-1]
+			counter++
 		}
 		list = calList
 		sum += calList[cup-1]

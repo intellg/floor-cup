@@ -1,6 +1,11 @@
 package degree
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
+
+var counter int
 
 func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
 	// 1.0 If eggs are enough then the binary tree is a non-hollow tree
@@ -10,5 +15,8 @@ func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
 		return
 	}
 
-	return innerCalculate(floor, cup)
+	counter = 0
+	degree = innerCalculate(floor, cup)
+	fmt.Println(counter)
+	return
 }
