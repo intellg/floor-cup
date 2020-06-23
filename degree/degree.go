@@ -1,12 +1,14 @@
 package degree
 
-import "math"
+import (
+	"math"
+)
 
 func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
 	// 1.0 If eggs are enough then the binary tree is a non-hollow tree
 	log2Floor := math.Log2(float64(floor))
-	if float64(cup) >= log2Floor {
-		degree = int(math.Ceil(log2Floor))
+	if float64(cup) > log2Floor {
+		degree = int(log2Floor) + 1
 		return
 	}
 
@@ -35,7 +37,7 @@ func InnerCalculateA(floor, cup int) (degree int) {
 }
 
 // ∑n=1~degree(∑m=0~cup(C(n,m)))
-func InnerCalculateB(floor, cup int) (degree int) {
+func InnerCalculateB(floor, cup int) (degree int) { // this function relies on the caller function to filter out the log2(Floor)
 	// 1.1 Initialize sum
 	sum := int(math.Pow(2, float64(cup))) - 1
 
@@ -92,4 +94,44 @@ func compose(n, m int) int {
 		result /= i
 	}
 	return result
+}
+
+func InnerCalculateC(floor, cup int) (degree int) {
+	dp := make([][]int, cup+1)
+	for i := 0; i < cup+1; i++ {
+		dp[i] = make([]int, floor+1)
+	}
+	for i := 1; i < floor+1; i++ {
+		dp[1][i] = i
+	}
+	for i := 1; i < cup+1; i++ {
+		dp[i][1] = 1
+	}
+
+	for i := 2; i < cup+1; i++ {
+		for j := 2; j < floor+1; j++ {
+			res := math.MaxInt64
+			for k := 1; k < j+1; k++ {
+				tmp := max(dp[i-1][k-1], dp[i][j-k])
+				res = min(tmp, res)
+			}
+			dp[i][j] = res + 1
+		}
+	}
+
+	return dp[cup][floor]
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }

@@ -25,8 +25,17 @@ func TestSumCompose(t *testing.T) {
 	}
 }
 
-var (
-	testData = [][]int{
+func TestInnerCalculate(t *testing.T) {
+	testFuncs := []func(int, int) int{
+		InnerCalculateA,
+		InnerCalculateB,
+		InnerCalculateC,
+	}
+	testData := [][]int{
+		{7, 3, 3},
+		{8, 3, 4},
+		{7, 30, 3},
+		{8, 30, 4},
 		{14, 3, 4},
 		{15, 3, 5},
 		{25, 3, 5},
@@ -35,52 +44,51 @@ var (
 		{127, 6, 8},
 		{246, 6, 8},
 		{247, 6, 9},
-		{150676185, 10, 33},
-		{150676186, 10, 34},
+		{511, 35, 9},
+		{512, 35, 10},
+		{7098, 8, 13},
+		{7099, 8, 14},
 	}
-)
-
-func TestInnerCalculateA(t *testing.T) {
-	for _, testItem := range testData {
-		degree := Calculate(testItem[0], testItem[1], InnerCalculateA)
-		if degree == testItem[2] {
-			t.Logf("correct degree: %d\n", degree)
-		} else {
-			t.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
-		}
-	}
-}
-
-func TestInnerCalculateB(t *testing.T) {
-	for _, testItem := range testData {
-		degree := Calculate(testItem[0], testItem[1], InnerCalculateB)
-		if degree == testItem[2] {
-			t.Logf("correct degree: %d\n", degree)
-		} else {
-			t.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+	for i, testFunc := range testFuncs {
+		t.Logf("======== Testing for function %d ========\n", i)
+		for _, testItem := range testData {
+			degree := Calculate(testItem[0], testItem[1], testFunc)
+			if degree == testItem[2] {
+				t.Logf("correct degree: %d\n", degree)
+			} else {
+				t.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+			}
 		}
 	}
 }
 
 var (
-	benchmarkData1 = [][]int{
-		{150676185, 10, 33},
-		{150676186, 10, 34},
+	benchmarkData = [][]int{
+		{511, 35, 9},
+		{512, 35, 10},
 	}
-	benchmarkData2 = [][]int{
-		{1073741822, 29, 30},
-		{1073741823, 29, 31},
-	}
-	benchmarkData3 = [][]int{
-		{8589928573, 29, 33},
-		{8589928574, 29, 34},
-	}
+	//benchmarkData = [][]int{
+	//	{7098, 8, 13},
+	//	{7099, 8, 14},
+	//}
+	//benchmarkData = [][]int{
+	//	{150676185, 10, 33},
+	//	{150676186, 10, 34},
+	//}
+	//benchmarkData = [][]int{
+	//	{1073741822, 29, 30},
+	//	{1073741823, 29, 31},
+	//}
+	//benchmarkData = [][]int{
+	//	{8589928573, 29, 33},
+	//	{8589928574, 29, 34},
+	//}
 )
 
-func BenchmarkInnerCalculateA(b *testing.B) {
+func BenchmarkCalculateA(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for _, testItem := range benchmarkData1 {
+		for _, testItem := range benchmarkData {
 			degree := Calculate(testItem[0], testItem[1], InnerCalculateA)
 			if degree != testItem[2] {
 				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
@@ -89,11 +97,47 @@ func BenchmarkInnerCalculateA(b *testing.B) {
 	}
 }
 
-func BenchmarkInnerCalculateB(b *testing.B) {
+func BenchmarkCalculateB(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for _, testItem := range benchmarkData1 {
-			degree := Calculate(testItem[0], testItem[1], InnerCalculateB)
+		for _, testItem := range benchmarkData {
+			degree := Calculate(testItem[0], testItem[1], InnerCalculateB) // Calculate() is the mandatory caller for InnerCalculateB
+			if degree != testItem[2] {
+				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+			}
+		}
+	}
+}
+
+func BenchmarkCalculateC(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, testItem := range benchmarkData {
+			degree := Calculate(testItem[0], testItem[1], InnerCalculateC)
+			if degree != testItem[2] {
+				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+			}
+		}
+	}
+}
+
+func BenchmarkInnerCalculateA(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, testItem := range benchmarkData {
+			degree := InnerCalculateA(testItem[0], testItem[1])
+			if degree != testItem[2] {
+				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+			}
+		}
+	}
+}
+
+func BenchmarkInnerCalculateC(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, testItem := range benchmarkData {
+			degree := InnerCalculateC(testItem[0], testItem[1])
 			if degree != testItem[2] {
 				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
 			}

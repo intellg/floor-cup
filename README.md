@@ -32,7 +32,7 @@
 
 n阶的满二叉树指的是：每层（第m层）有2^(m-1)个节点的二叉树；
 n阶完全二叉树指的是除了第n层，每层（第m层）有2^(m-1)个节点，第n层节点从左到右排列。
-在完全二叉树里没有孩子的节点只能存在于第n阶或者第n-1阶，而且不会出现只有右孩子的节点。
+在完全二叉树里没有子节点的节点只能存在于第n阶或者第n-1阶，而且不会出现只有右子节点的节点。
 所以说，满二叉树是第n阶正好有2^(n-1)个节点的特殊地完全二叉树。
 
 但是，毕竟杯子还是会碎的，所以这个二叉树将不再是一个完全二叉树，而是一个镂空的二叉树，镂空的点就是那些杯子碎掉的位置。
@@ -247,8 +247,8 @@ b的值v(b) = v(2,1) = v(1,1) + v(1,0) = v(a) + 1 = 2 + 1 = 3
 构成cup=c且包含floor=f个节点的镂空树：
 * 从根节点出发，以广度优先的方式创建子节点
 * 设定当前破碎杯子数b=0
-* 每次创建左孩子前，判断如果b<c则创建左孩子，否则只能创建右孩子
-* 每次创建完左孩子后，b++
+* 每次创建左节点前，判断如果b<c则创建左节点，否则只能创建右子节点
+* 每次创建完左节点后，b++
 
 填充镂空树前，我们定义如下参数：
 * v - 节点的数值
@@ -259,14 +259,14 @@ b的值v(b) = v(2,1) = v(1,1) + v(1,0) = v(a) + 1 = 2 + 1 = 3
 * pcr - 父节点的右子孙数
 
 为了填充cup=c且深度为n阶的镂空树，我们需要遍历两次镂空树，第一次是从第n阶向root节点进行反向的广度优先遍历
-* 如果当前节点是其父节点的左孩子，则将此节点的左子孙数pcl=cl+cr+1
-* 如果当前节点是其父节点的右孩子，则其父节点的右子孙数pcr=cl+cr+1
+* 如果当前节点是其父节点的左子节点，则将此节点的左子孙数pcl=cl+cr+1
+* 如果当前节点是其父节点的右子节点，则其父节点的右子孙数pcr=cl+cr+1
 * 如果当前节点没有父节点，则结束遍历
 
 第二次是从root节点遍历镂空树，此次遍历不限定广度优先或者深度优先。
 * 如果当前节点没有父节点，则此节点的数值v=cl+1
-* 如果当前结点是其父节点的左孩子的话，则v=pv-cr-1
-* 如果当前结点是其父节点的左孩子的话，则v=pv+cl+1
+* 如果当前结点是其父节点的左子节点的话，则v=pv-cr-1
+* 如果当前结点是其父节点的右子节点的话，则v=pv+cl+1
 
 到这里，问题2也得到了解答。
 而且，有意思的一点是：问题1和问题2可以分别使用独立地方法进行解决，也就是说#3.2和#3.3是分别独立的算法。
@@ -277,8 +277,6 @@ b的值v(b) = v(2,1) = v(1,1) + v(1,0) = v(a) + 1 = 2 + 1 = 3
 ### 4.1 计算镂空树的degree
 先放代码：
 ```go
-package foo
-
 func InnerCalculateA(floor, cup int) (degree int) {
     list := make([]int, cup)
     for c := 0; c < cup; c++ {
@@ -313,9 +311,6 @@ calList中全部元素计算完成后，将其赋给list，并将calList[cup-1]�
 
 是的，所以我们要在上述foo外面增加一个预处理：
 ```go
-package foo
-import "math"
-
 func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
     // 1.0 If eggs are enough then the binary tree is a non-hollow tree
     log2Floor := math.Log2(float64(floor))
@@ -341,13 +336,21 @@ func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
 
 这是一个嵌套的求和过程，后面的C(n,m)是组合公式。感兴趣的读者可以参照degree.go文件里的InnerCalculateB()方法。
 
-这个公式不仅复杂，其中还涉及到大量的乘法和除法运算，所以效率反而低。
+这个公式不仅复杂，其中还涉及到大量的乘法和除法运算，所以效率反而低。degree_test.go中有对比这两种方法的benchmark，下面是benchmark结果比较：
+
+    goos: windows
+    goarch: amd64
+    pkg: int-floor-cup/degree
+    BenchmarkInnerCalculateA-8        352951              3176 ns/op
+    BenchmarkInnerCalculateB-8         69752             17591 ns/op
+    PASS
+    ok      int-floor-cup/degree    2.902s
+
+差的还不是一星半点呢，可惜作者挖空心思的想到这么漂亮的公式，居然这么中看不中用！
 
 ### 4.2 计算扔杯子的楼层
 为了计算扔杯子的楼层，我们需要先构建如下的struct：
 ```go
-package foo
-
 type node struct {
 	Value      int   `json:"V"`
 	Left       *node `json:"L"`
@@ -359,3 +362,41 @@ type node struct {
 	IsLeft     bool  `json:"-"`
 }
 ```
+* Value 表示当前节点的数值
+* Left 是指向左节点的指针
+* Right 是指向右节点的指针
+* Parent 是指向父节点的指针
+* LeftCount 表示左子树的全部节点数
+* RightCount 表示右子树的全部节点数
+* Remain 用来在镂空树生长过程中记录杯子破碎的次数
+* IsLeft 标记当前节点是其父节点的左/右子树
+
+数据结构定义好之后，我们来看看addNode()方法
+```go
+func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
+	if parent.Remain > 0 {
+		left := node{}
+		left.Parent = parent
+		left.Remain = parent.Remain - 1
+		left.IsLeft = true
+		parent.Left = &left
+		*nodeList = append(*nodeList, &left)
+
+		if single {
+			return 1
+		} else {
+			count = 2
+		}
+	} else {
+		count = 1
+	}
+
+	right := node{}
+	right.Parent = parent
+	right.Remain = parent.Remain
+	parent.Right = &right
+	*nodeList = append(*nodeList, &right)
+	return
+}
+```
+逻辑很简单，如果还有未破随的杯子，就创建左节点
