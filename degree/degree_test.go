@@ -20,7 +20,7 @@ func TestSumCompose(t *testing.T) {
 		if sum == testItem[2] {
 			t.Logf("correct sum: %d\n", sum)
 		} else {
-			t.Errorf("invalid sum: expect %d bug get %d\n", testItem[2], sum)
+			t.Errorf("invalid sum: expect %d but get %d\n", testItem[2], sum)
 		}
 	}
 }
@@ -56,7 +56,7 @@ func TestInnerCalculate(t *testing.T) {
 			if degree == testItem[2] {
 				t.Logf("correct degree: %d\n", degree)
 			} else {
-				t.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+				t.Errorf("invalid degree: expect %d but get %d\n", testItem[2], degree)
 			}
 		}
 	}
@@ -91,7 +91,7 @@ func BenchmarkCalculateA(b *testing.B) {
 		for _, testItem := range benchmarkData {
 			degree := Calculate(testItem[0], testItem[1], InnerCalculateA)
 			if degree != testItem[2] {
-				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+				b.Errorf("invalid degree: expect %d but get %d\n", testItem[2], degree)
 			}
 		}
 	}
@@ -103,7 +103,7 @@ func BenchmarkCalculateB(b *testing.B) {
 		for _, testItem := range benchmarkData {
 			degree := Calculate(testItem[0], testItem[1], InnerCalculateB) // Calculate() is the mandatory caller for InnerCalculateB
 			if degree != testItem[2] {
-				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+				b.Errorf("invalid degree: expect %d but get %d\n", testItem[2], degree)
 			}
 		}
 	}
@@ -115,7 +115,7 @@ func BenchmarkCalculateC(b *testing.B) {
 		for _, testItem := range benchmarkData {
 			degree := Calculate(testItem[0], testItem[1], InnerCalculateC)
 			if degree != testItem[2] {
-				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+				b.Errorf("invalid degree: expect %d but get %d\n", testItem[2], degree)
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func BenchmarkInnerCalculateA(b *testing.B) {
 		for _, testItem := range benchmarkData {
 			degree := InnerCalculateA(testItem[0], testItem[1])
 			if degree != testItem[2] {
-				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+				b.Errorf("invalid degree: expect %d but get %d\n", testItem[2], degree)
 			}
 		}
 	}
@@ -139,7 +139,7 @@ func BenchmarkInnerCalculateC(b *testing.B) {
 		for _, testItem := range benchmarkData {
 			degree := InnerCalculateC(testItem[0], testItem[1])
 			if degree != testItem[2] {
-				b.Errorf("invalid degree: expect %d bug get %d\n", testItem[2], degree)
+				b.Errorf("invalid degree: expect %d but get %d\n", testItem[2], degree)
 			}
 		}
 	}

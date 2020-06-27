@@ -11,7 +11,7 @@
 这个问题可以先从两个极端考虑：
 * 如果只有1个杯子的话，那没啥说的了，从floor=1开始，一层一层往上扔，直到某一层碎掉为止。
 * 另一个极端，如果有无数个杯子，那妥了，第一次可以扔floor/2，接下来就按照二分查找进行下去就可以了。
-* 仔细考虑一下第二个极端，其实这个极端是有一个边界的：如果cup>=log2(floor)。超出这个边界，就是二分查找。
+* 仔细考虑一下第二个极端，其实这个极端是有一个边界的：cup>=log2(floor)。超出这个边界，就是二分查找。
 * 所以，我们需要讨论的关键区间，就是2<=cup<log2(floor)。当然cup>=log2(floor)也在问题范围之内，我们也会讨论到。
 
 ### 1.2 再一次分析
@@ -378,14 +378,14 @@ func Calculate(floor, cup int, innerCalculate func(int, int) int) (degree int) {
 为了计算扔杯子的楼层，我们需要先构建如下的struct：
 ```go
 type node struct {
-	Value      int   `json:"V"` // 当前节点的值
-	Left       *node `json:"L"` // 指向左节点的指针
-	Right      *node `json:"R"` // 指向右节点的指针
-	Parent     *node `json:"-"` // 指向父节点的指针
-	LeftCount  int   `json:"-"` // 左子树的全部节点个数
-	RightCount int   `json:"-"` // 右子树的全部节点个数
-	Remain     int   `json:"-"` // 在镂空树生长过程中记录杯子破碎的次数
-	IsLeft     bool  `json:"-"` // 标记当前节点是其父节点的左/右子树
+    Value      int   `json:"V"` // 当前节点的值
+    Left       *node `json:"L"` // 指向左节点的指针
+    Right      *node `json:"R"` // 指向右节点的指针
+    Parent     *node `json:"-"` // 指向父节点的指针
+    LeftCount  int   `json:"-"` // 左子树的全部节点个数
+    RightCount int   `json:"-"` // 右子树的全部节点个数
+    Remain     int   `json:"-"` // 在镂空树生长过程中记录杯子破碎的次数
+    IsLeft     bool  `json:"-"` // 标记当前节点是其父节点的左/右子树
 }
 ```
 
@@ -393,29 +393,29 @@ type node struct {
 数据结构定义好之后，我们来看看addNode()方法
 ```go
 func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
-	if parent.Remain > 0 {
-		left := node{}
-		left.Parent = parent
-		left.Remain = parent.Remain - 1
-		left.IsLeft = true
-		parent.Left = &left
-		*nodeList = append(*nodeList, &left)
+    if parent.Remain > 0 {
+        left := node{}
+        left.Parent = parent
+        left.Remain = parent.Remain - 1
+        left.IsLeft = true
+        parent.Left = &left
+        *nodeList = append(*nodeList, &left)
 
-		if single {
-			return 1
-		} else {
-			count = 2
-		}
-	} else {
-		count = 1
-	}
+        if single {
+            return 1
+        } else {
+            count = 2
+        }
+    } else {
+        count = 1
+    }
 
-	right := node{}
-	right.Parent = parent
-	right.Remain = parent.Remain
-	parent.Right = &right
-	*nodeList = append(*nodeList, &right)
-	return
+    right := node{}
+    right.Parent = parent
+    right.Remain = parent.Remain
+    parent.Right = &right
+    *nodeList = append(*nodeList, &right)
+    return
 }
 ```
 逻辑比较简单：
@@ -426,24 +426,24 @@ func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
 
 注意，addNode()方法并不是直接被调用的，真正被调用的是addBothNode()和addSingleNode()。
 ```go
-	sum := 1
-	for i := 1; i < degree-1; i++ {
-		nodeList[i] = make([]*node, 0, int(math.Pow(2, float64(i))))
-		for _, eachNode := range nodeList[i-1] {
-			sum += addBothNode(eachNode, &nodeList[i])
-		}
-	}
-	restNodeNumber := floor - sum
-	for _, eachNode := range nodeList[degree-2] {
-		if restNodeNumber == 0 {
-			break
-		}
-		if restNodeNumber == 1 {
-			addSingleNode(eachNode, &nodeList[degree-1])
-			break
-		}
-		restNodeNumber -= addBothNode(eachNode, &nodeList[degree-1])
-	}
+    sum := 1
+    for i := 1; i < degree-1; i++ {
+        nodeList[i] = make([]*node, 0, int(math.Pow(2, float64(i))))
+        for _, eachNode := range nodeList[i-1] {
+            sum += addBothNode(eachNode, &nodeList[i])
+        }
+    }
+    restNodeNumber := floor - sum
+    for _, eachNode := range nodeList[degree-2] {
+        if restNodeNumber == 0 {
+            break
+        }
+        if restNodeNumber == 1 {
+            addSingleNode(eachNode, &nodeList[degree-1])
+            break
+        }
+        restNodeNumber -= addBothNode(eachNode, &nodeList[degree-1])
+    }
 ```
 上述第一个循环体内是对镂空树内除了bottom阶的各个节点的添加，nodeList是广度优先遍历需要用到的额外存储空间，其中按顺序存储每一阶的各个节点。
 上述第二个循环体内是对镂空树的bottom阶节点的添加。restNodeNumber为1则调用addSingleNode()否则调用addBothNode()。循环的退出条件是restNodeNumber为0。
@@ -453,14 +453,14 @@ func addNode(parent *node, nodeList *[]*node, single bool) (count int) {
 具体算法参照#4.2
 ```go
 func adjustCount(nodeList *[]*node) {
-	for _, eachNode := range *nodeList {
-		if eachNode.Left != nil {
-			eachNode.LeftCount = eachNode.Left.LeftCount + eachNode.Left.RightCount + 1
-		}
-		if eachNode.Right != nil {
-			eachNode.RightCount = eachNode.Right.LeftCount + eachNode.Right.RightCount + 1
-		}
-	}
+    for _, eachNode := range *nodeList {
+        if eachNode.Left != nil {
+            eachNode.LeftCount = eachNode.Left.LeftCount + eachNode.Left.RightCount + 1
+        }
+        if eachNode.Right != nil {
+            eachNode.RightCount = eachNode.Right.LeftCount + eachNode.Right.RightCount + 1
+        }
+    }
 }
 ```
 
@@ -469,17 +469,17 @@ func adjustCount(nodeList *[]*node) {
 具体算法参照#4.2
 ```go
 func fillValue(nodeList *[]*node) {
-	for _, eachNode := range *nodeList {
-		if eachNode.Parent == nil { // root
-			eachNode.Value = eachNode.LeftCount + 1
-		} else {
-			if eachNode.IsLeft { // Left node
-				eachNode.Value = eachNode.Parent.Value - eachNode.RightCount - 1
-			} else { // Right node
-				eachNode.Value = eachNode.Parent.Value + eachNode.LeftCount + 1
-			}
-		}
-	}
+    for _, eachNode := range *nodeList {
+        if eachNode.Parent == nil { // root
+            eachNode.Value = eachNode.LeftCount + 1
+        } else {
+            if eachNode.IsLeft { // Left node
+                eachNode.Value = eachNode.Parent.Value - eachNode.RightCount - 1
+            } else { // Right node
+                eachNode.Value = eachNode.Parent.Value + eachNode.LeftCount + 1
+            }
+        }
+    }
 }
 ```
 
@@ -489,7 +489,7 @@ func fillValue(nodeList *[]*node) {
 ## 6. 后记
 作者是在几周前，跟朋友们的闲聊过程中，听说这个问题的。当时朋友建议使用动态规划来解决此问题，但是作者连动态规划的基本原理都不了解，所以只能从自己的理解出发，尝试解决问题。
 
-理论上说，这种复杂的问题会有很多种解法，solution_c.go文件中就是作者的一位好友提供的方法。
+理论上说，这种复杂的问题会有很多种解法，solution_c.go文件中就是作者的一位好友提供的解法。
 
 这些方法从思路上来说都是条条大路通罗马，没有优劣之分。只不过有的方法赶巧效率高，有的方法效率低些，有的方法会更早地遇到整数越界而导致结果错误而已。
 
